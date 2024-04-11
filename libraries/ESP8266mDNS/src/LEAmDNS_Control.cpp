@@ -428,9 +428,9 @@ namespace MDNSImplementation
                         {
                             // IP6 address was asked for
 #ifdef MDNS_IP6_SUPPORT
-                            if ((AnswerType_AAAA == pAnswerRR->answerType())
-                                && (((stcMDNS_RRAnswerAAAA*)pAnswerRR)->m_IPAddress
-                                    == _getResponseMulticastInterface()))
+                            if ((AnswerType_AAAA == pKnownRRAnswer->answerType())
+                                && (((stcMDNS_RRAnswerAAAA*)pKnownRRAnswer)->m_IPAddress
+                                    == m_pUDPContext->getInputNetif()->ip_addr))
                             {
                                 DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
                                     PSTR("[MDNSResponder] _parseQuery: IP6 address already "
@@ -491,7 +491,7 @@ namespace MDNSImplementation
                             }
 #endif
 #ifdef MDNS_IP6_SUPPORT
-                            if (AnswerType_AAAA == pAnswerRR->answerType())
+                            if (AnswerType_AAAA == pKnownRRAnswer->answerType())
                             {
                                 // TODO
                             }
@@ -1288,7 +1288,7 @@ namespace MDNSImplementation
                     = pServiceQuery->findAnswerForHostDomain(p_pAAAAAnswer->m_Header.m_Domain);
                 if (pSQAnswer)  // Answer for this host domain (eg. esp8266.local) available
                 {
-                    stcIP6Address* pIP6Address
+                    stcMDNSServiceQuery::stcAnswer::stcIP6Address* pIP6Address
                         = pSQAnswer->findIP6Address(p_pAAAAAnswer->m_IPAddress);
                     if (pIP6Address)
                     {
@@ -1322,7 +1322,7 @@ namespace MDNSImplementation
                         // 'Goodbye' note)
                         if (p_pAAAAAnswer->m_u32TTL)  // NOT just a 'Goodbye' message
                         {
-                            pIP6Address = new stcIP6Address(p_pAAAAAnswer->m_IPAddress,
+                            pIP6Address = new stcMDNSServiceQuery::stcAnswer::stcIP6Address(p_pAAAAAnswer->m_IPAddress,
                                                             p_pAAAAAnswer->m_u32TTL);
                             if ((pIP6Address) && (pSQAnswer->addIP6Address(pIP6Address)))
                             {
@@ -1330,11 +1330,13 @@ namespace MDNSImplementation
 
                                 if (pServiceQuery->m_fnCallback)
                                 {
+                                    MDNSServiceInfo serviceInfo(
+                                            *this, (hMDNSServiceQuery)pServiceQuery,
+                                        pServiceQuery->indexOfAnswer(pSQAnswer));
                                     pServiceQuery->m_fnCallback(
-                                        this, (hMDNSServiceQuery)pServiceQuery,
-                                        pServiceQuery->indexOfAnswer(pSQAnswer),
-                                        ServiceQueryAnswerType_IP6Address, true,
-                                        pServiceQuery->m_pUserdata);
+                                        serviceInfo,
+                                        static_cast<AnswerType>(ServiceQueryAnswerType_IP6Address),
+                                        true);
                                 }
                             }
                             else
@@ -2175,11 +2177,13 @@ namespace MDNSImplementation
                                 // Notify client
                                 if (pServiceQuery->m_fnCallback)
                                 {
+                                    MDNSServiceInfo serviceInfo(
+                                        *this, (hMDNSServiceQuery)pServiceQuery,
+                                        pServiceQuery->indexOfAnswer(pSQAnswer));
                                     pServiceQuery->m_fnCallback(
-                                        this, (hMDNSServiceQuery)pServiceQuery,
-                                        pServiceQuery->indexOfAnswer(pSQAnswer),
-                                        ServiceQueryAnswerType_IP6Address, false,
-                                        pServiceQuery->m_pUserdata);
+                                        serviceInfo,
+                                        static_cast<AnswerType>(ServiceQueryAnswerType_IP6Address),
+                                        false);
                                 }
                             }
                         }  // IP6 flagged

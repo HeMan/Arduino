@@ -1545,6 +1545,23 @@ namespace MDNSImplementation
         m_TTL.set(p_u32TTL);
     }
 #endif
+#ifdef MDNS_IP6_SUPPORT
+    /**
+        MDNSResponder::stcMDNSServiceQuery::stcAnswer::stcIP6Address
+
+    */
+
+    /*
+        MDNSResponder::stcMDNSServiceQuery::stcAnswer::stcIP6Address::stcIP6Address constructor
+    */
+    MDNSResponder::stcMDNSServiceQuery::stcAnswer::stcIP6Address::stcIP6Address(
+        IPAddress p_IPAddress, uint32_t p_u32TTL /*= 0*/) :
+        m_pNext(0),
+        m_IPAddress(p_IPAddress)
+    {
+        m_TTL.set(p_u32TTL);
+    }
+#endif
 
     /**
         MDNSResponder::stcMDNSServiceQuery::stcAnswer
@@ -1583,7 +1600,7 @@ namespace MDNSImplementation
                 (releaseIP4Addresses()) &&
 #endif
 #ifdef MDNS_IP6_SUPPORT
-                (releaseIP6Addresses())
+                (releaseIP6Addresses()) &&
 #endif
                     (releaseHostDomain())
                 && (releaseServiceDomain()));
@@ -1879,7 +1896,7 @@ namespace MDNSImplementation
         MDNSResponder::stcMDNSServiceQuery::stcAnswer::findIP6Address
     */
     MDNSResponder::stcMDNSServiceQuery::stcAnswer::stcIP6Address*
-    MDNSResponder::stcMDNSServiceQuery::stcAnswer::findIP6Address(const IP6Address& p_IPAddress)
+    MDNSResponder::stcMDNSServiceQuery::stcAnswer::findIP6Address(const IPAddress& p_IPAddress)
     {
         return (stcIP6Address*)(((const stcAnswer*)this)->findIP6Address(p_IPAddress));
     }
@@ -1894,7 +1911,7 @@ namespace MDNSImplementation
         const stcIP6Address* pIP6Address = m_pIP6Addresses;
         while (pIP6Address)
         {
-            if (p_IP6Address->m_IPAddress == p_IPAddress)
+            if (pIP6Address->m_IPAddress == p_IPAddress)
             {
                 break;
             }

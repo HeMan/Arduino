@@ -800,7 +800,7 @@ namespace MDNSImplementation
             = (pServiceQuery ? pServiceQuery->answerAtIndex(p_u32AnswerIndex) : 0);
         const stcMDNSServiceQuery::stcAnswer::stcIP6Address* pIP6Address
             = (((pSQAnswer) && (pSQAnswer->m_pIP6Addresses)) ? pSQAnswer->IP6AddressAtIndex(0) : 0);
-        return (pIP6Address ? pIP6Address->m_IPAddress : IP6Address());
+        return (pIP6Address ? pIP6Address->m_IPAddress : IPAddress());
     }
 #endif
 
@@ -1054,7 +1054,7 @@ namespace MDNSImplementation
         stcMDNSServiceQuery::stcAnswer* pSQAnswer
             = (pServiceQuery ? pServiceQuery->answerAtIndex(p_u32AnswerIndex) : 0);
         return ((pSQAnswer)
-                && (pSQAnswer->m_u32ContentFlags & ServiceQueryAnswerType_HostIP6Address));
+                && (pSQAnswer->m_u32ContentFlags & ServiceQueryAnswerType_IP6Address));
     }
 
     /*

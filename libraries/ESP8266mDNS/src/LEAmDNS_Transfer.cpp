@@ -131,8 +131,7 @@ namespace MDNSImplementation
 
 #ifdef MDNS_IP4_SUPPORT
                 IPAddress toMulticastAddress(DNS_MQUERY_IPV4_GROUP_INIT);
-#endif
-#ifdef MDNS_IP6_SUPPORT
+#elif defined(MDNS_IP6_SUPPORT)
                 // TODO: set multicast address
                 IPAddress toMulticastAddress(DNS_MQUERY_IPV6_GROUP_INIT);
 #endif

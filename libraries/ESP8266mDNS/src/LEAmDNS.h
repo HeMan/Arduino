@@ -324,6 +324,10 @@ namespace MDNSImplementation
         uint32_t queryService(const String& p_strService, const String& p_strProtocol);
 
         const char* answerHostname(const uint32_t p_u32AnswerIndex);
+#ifdef MDNS_IP6_SUPPORT
+        IPAddress answerIP6(const uint32_t p_u32AnswerIndex);
+#endif
+
         IPAddress   answerIP(const uint32_t p_u32AnswerIndex);
         uint16_t    answerPort(const uint32_t p_u32AnswerIndex);
         // for compatibility...
@@ -862,8 +866,7 @@ namespace MDNSImplementation
         */
         struct stcMDNS_RRAnswerAAAA: public stcMDNS_RRAnswer
         {
-            // TODO: IP6Address          m_IPAddress;
-
+            IPAddress m_IPAddress;
             stcMDNS_RRAnswerAAAA(const stcMDNS_RRHeader& p_Header, uint32_t p_u32TTL);
             ~stcMDNS_RRAnswerAAAA(void);
 
@@ -1026,7 +1029,7 @@ namespace MDNSImplementation
                 struct stcIP6Address
                 {
                     stcIP6Address* m_pNext;
-                    IP6Address     m_IPAddress;
+                    IPAddress     m_IPAddress;
                     stcTTL         m_TTL;
 
                     stcIP6Address(IPAddress p_IPAddress, uint32_t p_u32TTL = 0);
