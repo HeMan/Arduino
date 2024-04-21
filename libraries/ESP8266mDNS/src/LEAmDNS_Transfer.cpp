@@ -124,20 +124,18 @@ namespace MDNSImplementation
         {
             if (netif_is_up(pNetIf) && IPAddress(pNetIf->ip_addr).isSet())
             {
+#ifdef MDNS_IP4_SUPPORT
                 IPAddress fromIPAddress;
                 // fromIPAddress = _getResponseMulticastInterface();
                 fromIPAddress = pNetIf->ip_addr;
                 m_pUDPContext->setMulticastInterface(fromIPAddress);
+                m_pUDPContext ->pcb()->local_ip.type = IPADDR_TYPE_V4;
+                m_pUDPContext ->pcb()->remote_ip.type = IPADDR_TYPE_V4;
 
-#ifdef MDNS_IP4_SUPPORT
                 IPAddress toMulticastAddress(DNS_MQUERY_IPV4_GROUP_INIT);
-#elif defined(MDNS_IP6_SUPPORT)
-                // TODO: set multicast address
-                IPAddress toMulticastAddress(DNS_MQUERY_IPV6_GROUP_INIT);
-#endif
                 DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
-                    PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s'.\n"),
-                    toMulticastAddress.toString().c_str()););
+                    PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s' from '%s'.\n"),
+                    toMulticastAddress.toString().c_str(), fromIPAddress.toString().c_str()););
                 bResult = ((_prepareMDNSMessage(p_rSendParameter, fromIPAddress))
                            && (m_pUDPContext->sendTimeout(toMulticastAddress, DNS_MQUERY_PORT,
                                                           MDNS_UDPCONTEXT_TIMEOUT)));
@@ -146,6 +144,34 @@ namespace MDNSImplementation
                     DEBUG_OUTPUT.printf_P(
                         PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: FAILED!\n"));
                 });
+#endif
+#if defined(MDNS_IP6_SUPPORT)
+                // TODO: set multicast address
+                for (uint8_t address = 0; address <= 3; address++) {
+                    if (fromIPAddress= pNetIf->ip6_addr[address]) {
+                        //m_pUDPContext ->setMulticastInterface(pNetIf->ip_addr);
+                        m_pUDPContext ->setMulticastInterface(fromIPAddress);
+                        m_pUDPContext ->pcb()->local_ip.type = IPADDR_TYPE_V6;
+                        m_pUDPContext ->pcb()->remote_ip.type = IPADDR_TYPE_V6;
+
+                        IPAddress toMulticastAddress6(DNS_MQUERY_IPV6_GROUP_INIT);
+                        //fromIPAddress.setV6();
+                        //toMulticastAddress6.setV6();
+                        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR(".+.+.+.+..+fromtype %u totype %u.+.+.+.+..+\n"),fromIPAddress.isV6(), toMulticastAddress6.isV6()));
+                        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
+                                    PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s' from '%s'.\n"),
+                                    toMulticastAddress6.toString().c_str(), fromIPAddress.toString().c_str()););
+                        bResult = ((_prepareMDNSMessage(p_rSendParameter, fromIPAddress))
+                                && (m_pUDPContext->sendTimeout(toMulticastAddress6, DNS_MQUERY_PORT,
+                                        MDNS_UDPCONTEXT_TIMEOUT)));
+
+                        DEBUG_EX_ERR(if (!bResult) {
+                                DEBUG_OUTPUT.printf_P(
+                                        PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: FAILED!\n"));
+                                });
+                    }
+                }
+#endif
             }
         }
         return bResult;
@@ -220,39 +246,43 @@ namespace MDNSImplementation
 
             // Answers and authoritative answers
 #ifdef MDNS_IP4_SUPPORT
-            if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_A))
-            {
-                ((Sequence_Count == sequence)
+            if (p_IPAddress.isV4()) {
+                if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_A))
+                {
+                    ((Sequence_Count == sequence)
                      ? ++ru16Answers
                      : (bResult = _writeMDNSAnswer_A(p_IPAddress, p_rSendParameter)));
-                DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(
-                    PSTR("[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_A(A) FAILED!\n")););
-            }
-            if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_PTR_IP4))
-            {
-                ((Sequence_Count == sequence)
+                    DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(
+                                PSTR("[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_A(A) FAILED!\n")););
+                }
+                if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_PTR_IP4))
+                {
+                    ((Sequence_Count == sequence)
                      ? ++ru16Answers
                      : (bResult = _writeMDNSAnswer_PTR_IP4(p_IPAddress, p_rSendParameter)));
-                DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(PSTR(
-                    "[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_PTR_IP4 FAILED!\n")););
+                    DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(PSTR(
+                                    "[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_PTR_IP4 FAILED!\n")););
+                }
             }
 #endif
 #ifdef MDNS_IP6_SUPPORT
-            if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_AAAA))
-            {
-                ((Sequence_Count == sequence)
+            if (p_IPAddress.isV6()) {
+                if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_AAAA))
+                {
+                    ((Sequence_Count == sequence)
                      ? ++ru16Answers
                      : (bResult = _writeMDNSAnswer_AAAA(p_IPAddress, p_rSendParameter)));
-                DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(PSTR(
-                    "[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_AAAA(A) FAILED!\n")););
-            }
-            if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_PTR_IP6))
-            {
-                ((Sequence_Count == sequence)
+                    DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(PSTR(
+                                    "[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_AAAA(A) FAILED!\n")););
+                }
+                if ((bResult) && (p_rSendParameter.m_u8HostReplyMask & ContentFlag_PTR_IP6))
+                {
+                    ((Sequence_Count == sequence)
                      ? ++ru16Answers
                      : (bResult = _writeMDNSAnswer_PTR_IP6(p_IPAddress, p_rSendParameter)));
-                DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(PSTR(
-                    "[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_PTR_IP6 FAILED!\n")););
+                    DEBUG_EX_ERR(if (!bResult) DEBUG_OUTPUT.printf_P(PSTR(
+                                    "[MDNSResponder] _prepareMDNSMessage: _writeMDNSAnswer_PTR_IP6 FAILED!\n")););
+                }
             }
 #endif
 
@@ -357,7 +387,7 @@ namespace MDNSImplementation
 
             // Answer A needed?
 #ifdef MDNS_IP4_SUPPORT
-            if ((bResult) && (bNeedsAdditionalAnswerA))
+            if ((bResult) && (bNeedsAdditionalAnswerA) && p_IPAddress.isV4())
             {
                 ((Sequence_Count == sequence)
                      ? ++msgHeader.m_u16ARCount
@@ -368,7 +398,7 @@ namespace MDNSImplementation
 #endif
 #ifdef MDNS_IP6_SUPPORT
             // Answer AAAA needed?
-            if ((bResult) && (bNeedsAdditionalAnswerAAAA))
+            if ((bResult) && (bNeedsAdditionalAnswerAAAA) && p_IPAddress.isV6())
             {
                 ((Sequence_Count == sequence)
                      ? ++msgHeader.m_u16ARCount
@@ -1168,6 +1198,18 @@ namespace MDNSImplementation
         return bResult;
     }
 
+    bool MDNSResponder::_udpAppendBuffer( IPAddress address, size_t p_stLength)
+    {
+        bool bResult
+            = ((m_pUDPContext) && (p_stLength)
+               && (p_stLength == m_pUDPContext->append(reinterpret_cast<const char*>(address.raw6()), p_stLength)));
+        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P("---- JH ----- IP %s len %u", address.toString().c_str(), p_stLength));
+        DEBUG_EX_ERR(if (!bResult) {
+            DEBUG_OUTPUT.printf_P(PSTR("[MDNSResponder] _udpAppendBuffer: FAILED!\n"));
+        });
+        return bResult;
+    }
+
     /*
         MDNSResponder::_udpAppend8
     */
@@ -1760,7 +1802,8 @@ namespace MDNSImplementation
     bool MDNSResponder::_writeMDNSAnswer_AAAA(IPAddress                            p_IPAddress,
                                               MDNSResponder::stcMDNSSendParameter& p_rSendParameter)
     {
-        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR("[MDNSResponder] _writeMDNSAnswer_AAAA\n")););
+        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR("[MDNSResponder] _writeMDNSAnswer_AAAA (%s)\n"),
+                                            p_IPAddress.toString().c_str()););
 
         stcMDNS_RRAttributes attributes(DNS_RRTYPE_AAAA,
                                         ((p_rSendParameter.m_bCacheFlush ? 0x8000 : 0)
@@ -1771,7 +1814,8 @@ namespace MDNSImplementation
                (_write32((p_rSendParameter.m_bUnannounce ? 0 : MDNS_HOST_TTL), p_rSendParameter))
                &&                                              // TTL
                (_write16(MDNS_IP6_SIZE, p_rSendParameter)) &&  // RDLength
-               (false /*TODO: IP6 version of: _udpAppendBuffer((uint32_t)p_IPAddress, MDNS_IP4_SIZE)*/));  // RData
+               (_udpAppendBuffer(p_IPAddress, MDNS_IP6_SIZE)) &&
+               (p_rSendParameter.shiftOffset(MDNS_IP6_SIZE)));  // RData
 
         DEBUG_EX_ERR(if (!bResult) {
             DEBUG_OUTPUT.printf_P(PSTR("[MDNSResponder] _writeMDNSAnswer_AAAA: FAILED!\n"));

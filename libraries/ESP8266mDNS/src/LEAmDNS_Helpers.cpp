@@ -180,7 +180,7 @@ namespace MDNSImplementation
         m_pUDPContext = new UdpContext;
         m_pUDPContext->ref();
 
-        if (m_pUDPContext->listen(IP4_ADDR_ANY, DNS_MQUERY_PORT))
+        if (m_pUDPContext->listen(IP_ADDR_ANY, DNS_MQUERY_PORT))
         {
             m_pUDPContext->setMulticastTTL(MDNS_MULTICAST_TTL);
             m_pUDPContext->onRx(std::bind(&MDNSResponder::_callProcess, this));
@@ -754,7 +754,7 @@ namespace MDNSImplementation
         case DNS_RRTYPE_AAAA:
             DEBUG_OUTPUT.printf_P(
                 PSTR("AAAA IP:%s"),
-                ((stcMDNS_RRAnswerA*&)p_rpRRAnswer)->m_IPAddress.toString().c_str());
+                ((stcMDNS_RRAnswerA*&)p_RRAnswer)->m_IPAddress.toString().c_str());
             break;
 #endif
         case DNS_RRTYPE_SRV:

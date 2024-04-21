@@ -1278,6 +1278,7 @@ namespace MDNSImplementation
         bool _udpRead32(uint32_t& p_ru32Value);
 
         bool _udpAppendBuffer(const unsigned char* p_pcBuffer, size_t p_stLength);
+        bool _udpAppendBuffer(const IPAddress address, size_t p_stLength);
         bool _udpAppend8(uint8_t p_u8Value);
         bool _udpAppend16(uint16_t p_u16Value);
         bool _udpAppend32(uint32_t p_u32Value);
