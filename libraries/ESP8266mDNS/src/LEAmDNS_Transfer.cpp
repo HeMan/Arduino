@@ -124,51 +124,56 @@ namespace MDNSImplementation
         {
             if (netif_is_up(pNetIf) && IPAddress(pNetIf->ip_addr).isSet())
             {
+                    IPAddress fromIPAddress;
 #ifdef MDNS_IP4_SUPPORT
-                IPAddress fromIPAddress;
-                // fromIPAddress = _getResponseMulticastInterface();
-                fromIPAddress = pNetIf->ip_addr;
-                m_pUDPContext->setMulticastInterface(fromIPAddress);
-                m_pUDPContext ->pcb()->local_ip.type = IPADDR_TYPE_V4;
-                m_pUDPContext ->pcb()->remote_ip.type = IPADDR_TYPE_V4;
+                if (IPAddress(pNetIf->ip_addr).isV4()) {
+                    // fromIPAddress = _getResponseMulticastInterface();
+                    fromIPAddress = pNetIf->ip_addr;
+                    m_pUDPContext->setMulticastInterface(fromIPAddress);
+                    m_pUDPContext ->pcb()->local_ip.type = IPADDR_TYPE_V4;
+                    m_pUDPContext ->pcb()->remote_ip.type = IPADDR_TYPE_V4;
 
-                IPAddress toMulticastAddress(DNS_MQUERY_IPV4_GROUP_INIT);
-                DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
-                    PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s' from '%s'.\n"),
-                    toMulticastAddress.toString().c_str(), fromIPAddress.toString().c_str()););
-                bResult = ((_prepareMDNSMessage(p_rSendParameter, fromIPAddress))
-                           && (m_pUDPContext->sendTimeout(toMulticastAddress, DNS_MQUERY_PORT,
-                                                          MDNS_UDPCONTEXT_TIMEOUT)));
+                    IPAddress toMulticastAddress(DNS_MQUERY_IPV4_GROUP_INIT);
+                    DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
+                                PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s' from '%s'.\n"),
+                                toMulticastAddress.toString().c_str(), fromIPAddress.toString().c_str()););
+                    bResult = ((_prepareMDNSMessage(p_rSendParameter, fromIPAddress))
+                            && (m_pUDPContext->sendTimeout(toMulticastAddress, DNS_MQUERY_PORT,
+                                    MDNS_UDPCONTEXT_TIMEOUT)));
 
-                DEBUG_EX_ERR(if (!bResult) {
-                    DEBUG_OUTPUT.printf_P(
-                        PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: FAILED!\n"));
-                });
+                    DEBUG_EX_ERR(if (!bResult) {
+                            DEBUG_OUTPUT.printf_P(
+                                    PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: FAILED!\n"));
+                            });
+                }
 #endif
 #if defined(MDNS_IP6_SUPPORT)
                 // TODO: set multicast address
-                for (uint8_t address = 0; address <= 3; address++) {
-                    if (fromIPAddress= pNetIf->ip6_addr[address]) {
-                        //m_pUDPContext ->setMulticastInterface(pNetIf->ip_addr);
-                        m_pUDPContext ->setMulticastInterface(fromIPAddress);
-                        m_pUDPContext ->pcb()->local_ip.type = IPADDR_TYPE_V6;
-                        m_pUDPContext ->pcb()->remote_ip.type = IPADDR_TYPE_V6;
+                if (IPAddress(pNetIf->ip_addr).isV6()) {
+                    for (uint8_t address = 0; address <= 3; address++) {
+                        if (fromIPAddress= pNetIf->ip6_addr[address]) {
+                            //m_pUDPContext ->setMulticastInterface(pNetIf->ip_addr);
+                            m_pUDPContext ->setMulticastInterface(fromIPAddress);
+                            //m_pUDPContext ->pcb()->local_ip.type = IPADDR_TYPE_V6;
+                            ipaddr_aton("fe80::f6cf:a2ff:fe65:5ffa", &(m_pUDPContext ->pcb()->local_ip));
+                            m_pUDPContext ->pcb()->remote_ip.type = IPADDR_TYPE_V6;
 
-                        IPAddress toMulticastAddress6(DNS_MQUERY_IPV6_GROUP_INIT);
-                        //fromIPAddress.setV6();
-                        //toMulticastAddress6.setV6();
-                        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR(".+.+.+.+..+fromtype %u totype %u.+.+.+.+..+\n"),fromIPAddress.isV6(), toMulticastAddress6.isV6()));
-                        DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
-                                    PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s' from '%s'.\n"),
-                                    toMulticastAddress6.toString().c_str(), fromIPAddress.toString().c_str()););
-                        bResult = ((_prepareMDNSMessage(p_rSendParameter, fromIPAddress))
-                                && (m_pUDPContext->sendTimeout(toMulticastAddress6, DNS_MQUERY_PORT,
-                                        MDNS_UDPCONTEXT_TIMEOUT)));
+                            IPAddress toMulticastAddress6(DNS_MQUERY_IPV6_GROUP_INIT);
+                            //fromIPAddress.setV6();
+                            //toMulticastAddress6.setV6();
+                            DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR(".+.+.+.+..+fromtype %u totype %u.+.+.+.+..+\n"),fromIPAddress.isV6(), toMulticastAddress6.isV6()));
+                            DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(
+                                        PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: Will send to '%s' from '%s'.\n"),
+                                        toMulticastAddress6.toString().c_str(), fromIPAddress.toString().c_str()););
+                            bResult = ((_prepareMDNSMessage(p_rSendParameter, fromIPAddress))
+                                    && (m_pUDPContext->sendTimeout(toMulticastAddress6, DNS_MQUERY_PORT,
+                                            MDNS_UDPCONTEXT_TIMEOUT)));
 
-                        DEBUG_EX_ERR(if (!bResult) {
-                                DEBUG_OUTPUT.printf_P(
-                                        PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: FAILED!\n"));
-                                });
+                            DEBUG_EX_ERR(if (!bResult) {
+                                    DEBUG_OUTPUT.printf_P(
+                                            PSTR("[MDNSResponder] _sendMDNSMessage_Multicast: FAILED!\n"));
+                                    });
+                        }
                     }
                 }
 #endif
